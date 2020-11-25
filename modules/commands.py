@@ -8,6 +8,7 @@ import subprocess, glob, os, platform, sys, inspect
 (movie/video) - .mp4, .mov, .avi '''
 RESTRICTED_EXT = ['mp3', 'wav', 'wma', 'aac', 'mp4', 'mov', 'avi']
 SYSTEM_OS = platform.system()
+RELEASE = platform.release()
 DEF_OUTPUT = 'Cannot run given command \'{cmd}\' using system: \'' + SYSTEM_OS + '\''
 
 LIGHTDM_NO_GUEST = '''
@@ -20,17 +21,26 @@ AUTO_LOGIN_EXE_PATH = '/AutoLogon/AutoLogon{os_arch}.exe'
 
 
 ''' MISC '''
+def is_server():
+    if SYSTEM_OS.lower() != 'windows':
+        return
+    release = platform.release()
+    if release.lower().find('server'):
+        return True
+    return False
+
 def check64():
     ''' Check if os is 64 bit. Returns '64' if true and '' if false '''
     return '64' if platform.machine().endswith('64') else ''
 
 def windows_request_admin():
     ''' modified from https://stackoverflow.com/questions/130763/request-uac-elevation-from-within-a-python-script '''
-    if SYSTEM_OS.lower() != 'windows':
+    try:
+        import win32com.shell.shell as shell
+        ASADMIN = 'asadmin'
+    except ImportError:
         print('Unable to request windows admin (System is not Windows)')
         return
-    import win32com.shell.shell as shell
-    ASADMIN = 'asadmin'
 
     if sys.argv[-1] != ASADMIN:
         script = os.path.abspath(sys.argv[0])
@@ -45,6 +55,22 @@ def run_command(command: str, ip=None):
 
 
 ''' Users and Groups '''
+def get_all_users(group=''):
+    ''' Get all users as a list '''
+    output = DEF_OUTPUT.format(cmd='get_all_users')
+    users = []
+    if SYSTEM_OS.lower() == 'windows':
+        output = run_command('net user > users.txt')
+        users = open('./users.txt').readlines()
+    elif SYSTEM_OS.lower() == 'linux':
+        try:
+            import pwd
+            users = pwd.getpwall()
+        except ImportError:
+            pass
+    print(output)
+    return users
+
 def set_password(user: str, password=''):
     ''' set user password '''
     output = DEF_OUTPUT.format(cmd='set_password')
@@ -118,7 +144,7 @@ def disable_guest():
 def set_auto_login():
     ''' Enable or disable autologin. Windows only '''
     output = DEF_OUTPUT.format(cmd='set_auto_login')
-    if SYSTEM_OS.lower() is 'windows':
+    if SYSTEM_OS.lower() == 'windows':
         output = run_command('netplwiz')
     print(output)
 

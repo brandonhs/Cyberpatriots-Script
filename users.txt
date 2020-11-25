@@ -1,0 +1,40 @@
+
+net [<method>] user [misc. options] [targets]
+	List users
+
+net [<method>] user DELETE <name> [misc. options] [targets]
+	Delete specified user
+
+net [<method>] user INFO <name> [misc. options] [targets]
+	List the domain groups of the specified user
+
+net [<method>] user ADD <name> [password] [-c container] [-F user flags] [misc. options] [targets]
+	Add specified user
+
+net [<method>] user RENAME <oldusername> <newusername> [targets]
+	Rename specified user
+
+Valid methods: (auto-detected if not specified)
+	ads				Active Directory (LDAP/Kerberos)
+	rpc				DCE-RPC
+	rap				RAP (older systems)
+
+Valid targets: choose one (none defaults to localhost)
+	-S or --server=<server>		server name
+	-I or --ipaddress=<ipaddr>	address of target server
+	-w or --workgroup=<wg>		target workgroup or domain
+
+Valid miscellaneous options are:
+	-p or --port=<port>		connection port on target
+	-W or --myworkgroup=<wg>	client workgroup
+	-d or --debuglevel=<level>	debug level (0-10)
+	-n or --myname=<name>		client name
+	-U or --user=<name>		user name
+	-s or --configfile=<path>	pathname of smb.conf file
+	-l or --long			Display full information
+	-V or --version			Print samba version information
+	-P or --machine-pass		Authenticate as machine account
+	-e or --encrypt			Encrypt SMB transport (UNIX extended servers only)
+	-k or --kerberos		Use kerberos (active directory) authentication
+	-C or --comment=<comment>	descriptive comment (for add only)
+	-c or --container=<container>	LDAP container, defaults to cn=Users (for add in ADS only)
