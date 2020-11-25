@@ -1,4 +1,4 @@
-import subprocess, glob, os, platform, sys
+import subprocess, glob, os, platform, sys, inspect
 
 
 ''' COMMANDS '''
@@ -8,9 +8,22 @@ import subprocess, glob, os, platform, sys
 (movie/video) - .mp4, .mov, .avi '''
 RESTRICTED_EXT = ['mp3', 'wav', 'wma', 'aac', 'mp4', 'mov', 'avi']
 SYSTEM_OS = platform.system()
+DEF_OUTPUT = 'Cannot run given command \'{cmd}\' using system: \'' + SYSTEM_OS + '\''
+
+LIGHTDM_NO_GUEST = '''
+    [SeatDefaults]
+    greeter-session=unity-greeter
+    allow-guest=false
+'''
+
+AUTO_LOGIN_EXE_PATH = '/AutoLogon/AutoLogon{os_arch}.exe'
 
 
 ''' MISC '''
+def check64():
+    ''' Check if os is 64 bit. Returns '64' if true and '' if false '''
+    return '64' if platform.machine().endswith('64') else ''
+
 def windows_request_admin():
     ''' modified from https://stackoverflow.com/questions/130763/request-uac-elevation-from-within-a-python-script '''
     if SYSTEM_OS.lower() != 'windows':
@@ -32,9 +45,18 @@ def run_command(command: str, ip=None):
 
 
 ''' Users and Groups '''
+def set_password(user: str, password=''):
+    ''' set user password '''
+    output = DEF_OUTPUT.format(cmd='set_password')
+    if SYSTEM_OS.lower() == 'linux':
+        output = run_command('sudo passwd {user}'.format(user=user), password)
+    elif SYSTEM_OS.lower() == 'windows':
+        output = run_command('net user {user} {password}'.format(user=user, password=password))
+    print(output)
+
 def add_user(user: str, password=''):
     ''' Add user "user" '''
-    output = "Unsupported system: " + SYSTEM_OS
+    output = DEF_OUTPUT.format(cmd='add_user')
     if SYSTEM_OS.lower() == 'linux':
         output = run_command('sudo useradd {user} -m -s /bin/bash'.format(user=user))
         if password != '':
@@ -45,11 +67,60 @@ def add_user(user: str, password=''):
 
 def remove_user(user: str):
     ''' Remove user "user" '''
-    output = "Unsupported system: " + SYSTEM_OS
+    output = DEF_OUTPUT.format(cmd='remove_user')
     if SYSTEM_OS.lower() == 'linux':
         output = run_command('sudo userdel -r {user}'.format(user=user))
     print(output)
 
+def add_to_group(user: str, group: str):
+    ''' Move user to given group '''
+    output = DEF_OUTPUT.format(cmd='add_to_group')
+    if SYSTEM_OS.lower() == 'linux':
+        output = run_command('sudo gpasswd -a {user} {group}'.format(user=user, group=group))
+    elif SYSTEM_OS.lower() == 'windows':
+        output = run_command('net localgroup {group} {user} /add'.format(group=group, user=user))
+    print(output)
+
+def remove_from_group(user: str, group: str):
+    ''' Remove user from given group '''
+    output = DEF_OUTPUT.format(cmd='remove_from_group')
+    if SYSTEM_OS.lower() == 'linux':
+        output = run_command('sudo gpasswd -d {user} {group}'.format(user=user, group=group))
+    elif SYSTEM_OS.lower() == 'windows':
+        output = run_command('net localgroup {group} {user} /delete'.format(group=group, user=user))
+    print(output)
+
+def set_admin(user: str):
+    ''' Add user to the admin group '''
+    group = ''
+    if SYSTEM_OS.lower() == 'linux':
+        group = 'adm'
+    elif SYSTEM_OS.lower() == 'windows':
+        group = 'Administrator'
+    add_to_group(user=user, group=group)
+
+def remove_admin(user: str):
+    ''' Remove user from the admin group '''
+    group = ''
+    if SYSTEM_OS.lower() == 'linux':
+        group = 'adm'
+    elif SYSTEM_OS.lower() == 'windows':
+        group = 'Administrator'
+    remove_from_group(user=user, group=group)
+
+def disable_guest():
+    ''' Disable guest user. Only for linux based operating systems '''
+    output = DEF_OUTPUT.format(cmd='disable_guest')
+    if SYSTEM_OS.lower() == 'linux':
+        run_command('echo "{contents}"/etc/lightdm/lightdm.conf.d/50-no-guest.conf'.format(contents=LIGHTDM_NO_GUEST))
+    print(output)
+
+def set_auto_login():
+    ''' Enable or disable autologin. Windows only '''
+    output = DEF_OUTPUT.format(cmd='set_auto_login')
+    if SYSTEM_OS.lower() is 'windows':
+        output = run_command('netplwiz')
+    print(output)
 
 
 ''' Files (Windows Compatible) '''
